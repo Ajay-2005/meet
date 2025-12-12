@@ -2,7 +2,10 @@ package com.example.demo.models;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import lombok.Data;
+
 @Entity
+@Data
 public class Messages {
     @Id
     private String id;
