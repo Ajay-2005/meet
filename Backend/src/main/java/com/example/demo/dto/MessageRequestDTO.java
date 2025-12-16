@@ -4,11 +4,8 @@ import lombok.Data;
 
 @Data
 public class MessageRequestDTO {
+
+    private String chatId;
     private String senderId;
-    private String receiverId;
-    private String message;
+    private String content;
 }
-/*
- * we need two separate DTO because the client need to send (senderId, receiverId, message)
- * while client need to receive other details (id, timestamp,delivered status ) from the server
- */

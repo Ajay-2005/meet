@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import com.example.demo.dto.AuthRequestDTO;
 import com.example.demo.dto.AuthResponseDTO;
+import com.example.demo.models.Messages;
 import com.example.demo.models.Users;
 import com.example.demo.repositories.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
