@@ -5,7 +5,7 @@ FROM maven:3.9.3-eclipse-temurin-20
 WORKDIR /app
 
 # Copy pom.xml first (for dependency caching)
-COPY backend/pom.xml ./ 
+COPY Backend/pom.xml ./ 
 
 # Download dependencies offline
 RUN mvn dependency:go-offline
