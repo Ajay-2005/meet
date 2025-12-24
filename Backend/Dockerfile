@@ -1,24 +1,23 @@
-# Use Maven + JDK image
-FROM maven:3.9.3-eclipse-temurin-21
+# Start from Eclipse Temurin 21 JDK
+FROM eclipse-temurin:21-jdk-alpine
 
-
-# Set working directory inside container
 WORKDIR /app
 
-# Copy pom.xml first (for dependency caching)
-COPY Backend/pom.xml ./ 
+# Install Maven
+RUN apk add --no-cache maven
 
-# Download dependencies offline
+# Copy pom.xml and fetch dependencies
+COPY Backend/pom.xml ./
 RUN mvn dependency:go-offline
 
-# Copy the backend source code
+# Copy source code
 COPY Backend/src ./src
 
-# Package the Spring Boot app
+# Build the project
 RUN mvn clean package -DskipTests
 
 # Expose port
 EXPOSE 8080
 
-# Run the app (replace with actual JAR name)
+# Run the JAR
 CMD ["java","-jar","target/demo-0.0.1-SNAPSHOT.jar"]
