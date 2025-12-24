@@ -1,10 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Chat Test</title>
 </head>
 <body>
+
+<h2>Login</h2>
+<input type="text" id="username" placeholder="Username" />
+<input type="password" id="password" placeholder="Password" />
+<button onclick="login()">Login</button>
+
+<h2>Create Chat</h2>
+<input type="text" id="chatName" placeholder="Chat Name (optional)" />
+<input type="text" id="participantIds" placeholder="Other User IDs (comma separated)" />
+<label>
+    Group Chat <input type="checkbox" id="isGroupChat" />
+</label>
+<button onclick="createChat()">Create Chat</button>
+
+<h2>Messages</h2>
+<input type="text" id="chatId" placeholder="Chat ID" />
+<input type="text" id="messageContent" placeholder="Message" />
+<button onclick="sendMessage()">Send</button>
+<button onclick="loadMessages()">Load Old Messages</button>
+<button onclick="subscribeFromInput()">Subscribe to Chat</button>
+
+
+<ul id="messagesList"></ul>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script>
+let stompClient = null;
+
+/* ---------------- LOGIN ---------------- */
+async function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    const res = await fetch('http://localhost:8080/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include' // important for session cookie
+    });
+
+    if (res.ok) {
+        const data = await res.json();
+        sessionStorage.setItem("userId", data.id);
+        alert('Login successful');
+        connectWebSocket();
+    } else {
+        alert('Login failed');
+    }
+}
+
+/* ---------------- WS CONNECT ---------------- */
+function connectWebSocket() {
+    const socket = new SockJS('http://localhost:8080/ws');
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, () => {
+        console.log("WebSocket connected");
+    });
+}
+
+/* ---------------- CREATE CHAT ---------------- */
+async function createChat() {
+    const name = document.getElementById('chatName').value;
+    const participantIds = document.getElementById('participantIds').value.split(',').map(s => s.trim());
+    const isGroupChat = document.getElementById('isGroupChat').checked;
+
+    const res = await fetch('http://localhost:8080/chats/create-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, participantIds, groupChat: isGroupChat })
+    });
+
+    const chat = await res.json();
+    document.getElementById('chatId').value = chat.chatId;
+    subscribeToChat(chat.chatId);
+}
+
+function subscribeFromInput() {
+    const chatId = document.getElementById('chatId').value;
+
+    if (!chatId) {
+        alert("Enter chatId first");
+        return;
+    }
+
+    subscribeToChat(chatId);
+}
+
+/* ---------------- SUBSCRIBE ---------------- */
+function subscribeToChat(chatId) {
+    stompClient.subscribe(`/topic/chat/${chatId}`, (message) => {
+        console.log("Received message:", message.body);
+        const msg = JSON.parse(message.body);
+        appendMessage(msg);
+    });
+}
+
+/* ---------------- SEND MESSAGE ---------------- */
+function sendMessage() {
+    const content = document.getElementById('messageContent').value;
+    const chatId = document.getElementById('chatId').value;
+    const senderId = sessionStorage.getItem("userId");
+    console.log("senderId"+senderId);
+    if (!stompClient || !stompClient.connected) {
+        alert("WebSocket not connected");
+        return;
+    }
+
+    stompClient.send("/app/chat/send", {}, JSON.stringify({
+        chatId: chatId,
+        senderId: senderId,
+        content: content
+    }));
+
+    document.getElementById('messageContent').value = '';
+}
+
+/* ---------------- LOAD OLD ---------------- */
+async function loadMessages() {
+    const chatId = document.getElementById('chatId').value;
+
+    const res = await fetch(`http://localhost:8080/chats/${chatId}/messages`, {
+        method: 'GET',
+        credentials: 'include'
+    });
+
+    const messages = await res.json();
+    document.getElementById('messagesList').innerHTML = '';
+    messages.forEach(appendMessage);
+}
+
+/* ---------------- UI ---------------- */
+function appendMessage(msg) {
+    const ul = document.getElementById('messagesList');
+    const li = document.createElement('li');
+    li.textContent = `[${msg.timestamp}] ${msg.sender}: ${msg.content}`;
+    ul.appendChild(li);
+}
+</script>
 
 </body>
 </html>

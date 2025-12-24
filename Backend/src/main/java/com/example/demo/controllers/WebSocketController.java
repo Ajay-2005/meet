@@ -1,5 +1,4 @@
 package com.example.demo.controllers;
-
 import com.example.demo.dto.MessageRequestDTO;
 import com.example.demo.dto.MessageResponseDTO;
 import com.example.demo.models.Messages;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 public class WebSocketController {
-
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -21,7 +19,6 @@ public class WebSocketController {
         this.chatService = chatService;
         this.messagingTemplate = messagingTemplate;
     }
-
     @MessageMapping("/chat/send")
     public void sendMessage(MessageRequestDTO request){
         System.out.println("chatId:"+request.getChatId());
@@ -45,3 +42,4 @@ public class WebSocketController {
         );
     }
 }
+

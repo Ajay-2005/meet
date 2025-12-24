@@ -63,4 +63,8 @@ public class ChatService {
     public List<Chat> getUserChats(String userId) {
         return chatRepository.findByParticipantsUserID(userId);
     }
+    public List<String> getChatMemberIds(String chatId) {
+        Chat chat = chatRepository.findById(chatId).orElseThrow(() -> new RuntimeException("Chat not found"));
+        return chat.getParticipants().stream().map(Users::getUserID).toList();
+    }
 }

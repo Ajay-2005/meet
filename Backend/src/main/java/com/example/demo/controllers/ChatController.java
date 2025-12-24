@@ -1,5 +1,4 @@
 package com.example.demo.controllers;
-
 import com.example.demo.dto.ChatRequestDTO;
 import com.example.demo.dto.ChatResponseDTO;
 import com.example.demo.dto.MessageRequestDTO;
@@ -8,17 +7,19 @@ import com.example.demo.models.Chat;
 import com.example.demo.models.Messages;
 import com.example.demo.models.Users;
 import com.example.demo.services.ChatService;
+import com.example.demo.services.PresenceService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/chats")
 public class ChatController {
     private final ChatService chatService;
-    public ChatController(ChatService chatService) {
+    private final PresenceService presenceService;
+    public ChatController(ChatService chatService,PresenceService presenceService) {
         this.chatService = chatService;
+        this.presenceService=presenceService;
     }
     @PostMapping("/create-chat")
     public ChatResponseDTO createChat(@RequestBody ChatRequestDTO request, HttpSession session) {
@@ -86,7 +87,6 @@ public class ChatController {
     public List<ChatResponseDTO> getUserChats(HttpSession session) {
         String userId = (String) session.getAttribute("userId");
         if (userId == null) throw new RuntimeException("Unauthorized");
-
         List<Chat> chats = chatService.getUserChats(userId);
         return chats.stream().map(chat -> {
             ChatResponseDTO dto = new ChatResponseDTO();
@@ -100,7 +100,10 @@ public class ChatController {
             return dto;
         }).toList();
     }
-
-
-
+    @GetMapping("/{chatId}/online-users")
+    public List<String> getOnlineUsers(@PathVariable String chatId) {
+        // get all member IDs for this chat
+        List<String> members = chatService.getChatMemberIds(chatId);
+        return members.stream().filter(presenceService::isOnline).toList();
+    }
 }

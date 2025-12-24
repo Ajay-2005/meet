@@ -8,6 +8,8 @@ import com.example.demo.repositories.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class AuthService {
     private UserRepository userRepository;
@@ -26,6 +28,7 @@ public class AuthService {
     }
     public AuthResponseDTO login(AuthRequestDTO authRequestDTO) {
         Users user = userRepository.findByUsername(authRequestDTO.getUsername());
+        System.out.println("user:"+user);
         if (user == null) {
             throw new RuntimeException("User not found");
         }
@@ -33,6 +36,14 @@ public class AuthService {
             throw new RuntimeException("Invalid password");
         }
 
+        return new AuthResponseDTO(user.getUserID(), user.getUsername());
+    }
+    public AuthResponseDTO searchUser(String username) {
+        System.out.println("username:"+username);
+        Users user = userRepository.findByUsername(username.trim());
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
         return new AuthResponseDTO(user.getUserID(), user.getUsername());
     }
 }
