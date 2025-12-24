@@ -1,5 +1,6 @@
 # Use Maven + JDK image
-FROM maven:3.9.3-eclipse-temurin-20
+FROM maven:3.9.3-eclipse-temurin-21
+
 
 # Set working directory inside container
 WORKDIR /app
