@@ -11,7 +11,7 @@ COPY backend/pom.xml ./
 RUN mvn dependency:go-offline
 
 # Copy the backend source code
-COPY backend/src ./src
+COPY Backend/src ./src
 
 # Package the Spring Boot app
 RUN mvn clean package -DskipTests
