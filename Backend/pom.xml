@@ -85,6 +85,11 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <image>
+                        <name>chat-backend-demo</name>
+                    </image>
+                </configuration>
 			</plugin>
 		</plugins>
 	</build>

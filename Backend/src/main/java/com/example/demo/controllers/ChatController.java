@@ -83,27 +83,57 @@ public class ChatController {
             return dto;
         }).toList();
     }
+//    @GetMapping("/user/me")
+//    public List<ChatResponseDTO> getUserChats(HttpSession session) {
+//        String userId = (String) session.getAttribute("userId");
+//        if (userId == null) throw new RuntimeException("Unauthorized");
+//        List<String> chats = chatService.getUserChats(userId);
+//        return chats.stream().map(chat -> {
+//            ChatResponseDTO dto = new ChatResponseDTO();
+//            dto.setChatId(chat.getChatId());
+//            dto.setName(chat.getName());
+//            dto.setGroupChat(chat.isGroupChat());
+//            dto.setParticipantIds(chat.getParticipants()
+//                    .stream()
+//                    .map(u -> u.getUserID())
+//                    .toList());
+//            return dto;
+//        }).toList();
+//    }
     @GetMapping("/user/me")
     public List<ChatResponseDTO> getUserChats(HttpSession session) {
         String userId = (String) session.getAttribute("userId");
         if (userId == null) throw new RuntimeException("Unauthorized");
-        List<Chat> chats = chatService.getUserChats(userId);
-        return chats.stream().map(chat -> {
-            ChatResponseDTO dto = new ChatResponseDTO();
-            dto.setChatId(chat.getChatId());
-            dto.setName(chat.getName());
-            dto.setGroupChat(chat.isGroupChat());
-            dto.setParticipantIds(chat.getParticipants()
-                    .stream()
-                    .map(u -> u.getUserID())
-                    .toList());
-            return dto;
-        }).toList();
+
+         List<Chat> chats = chatService.getUserChats(userId);
+
+         return chats.stream().map(chat -> {
+             ChatResponseDTO dto = new ChatResponseDTO();
+             dto.setChatId(chat.getChatId());
+             dto.setName(chat.getName());
+             dto.setGroupChat(chat.isGroupChat());
+             dto.setParticipantIds(
+                     chat.getParticipants()
+                             .stream()
+                             .map(Users::getUserID)
+                             .filter(id -> !id.equals(userId)) // exclude self
+                             .toList()
+             );
+
+             return dto;
+            }).toList();
     }
+
+
     @GetMapping("/{chatId}/online-users")
     public List<String> getOnlineUsers(@PathVariable String chatId) {
         // get all member IDs for this chat
         List<String> members = chatService.getChatMemberIds(chatId);
         return members.stream().filter(presenceService::isOnline).toList();
     }
+
+//    @GetMapping("/{userId}")
+//    public List<String> getUserChats(@PathVariable String userId) {
+//        return chatService.getUserChats(userId);
+//    }
 }
