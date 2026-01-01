@@ -47,3 +47,4 @@ public class AuthService {
         return new AuthResponseDTO(user.getUserID(), user.getUsername());
     }
 }
+

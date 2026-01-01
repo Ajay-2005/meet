@@ -1,16 +1,19 @@
 package com.example.demo.services;
 
+import com.example.demo.dto.TypingIndicatorDTO;
 import com.example.demo.models.Chat;
 import com.example.demo.models.Messages;
 import com.example.demo.models.Users;
 import com.example.demo.repositories.ChatRepository;
 import com.example.demo.repositories.MessageRepository;
 import com.example.demo.repositories.UserRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,10 +21,12 @@ public class ChatService {
     private ChatRepository chatRepository;
     private MessageRepository messageRepository;
     private UserRepository userRepository;
-    public ChatService(ChatRepository chatRepository, MessageRepository messageRepository,UserRepository userRepository) {
+    private SimpMessagingTemplate messagingTemplate;
+    public ChatService(ChatRepository chatRepository, MessageRepository messageRepository,UserRepository userRepository,SimpMessagingTemplate messagingTemplate) {
         this.chatRepository = chatRepository;
         this.messageRepository = messageRepository;
         this.userRepository=userRepository;
+        this.messagingTemplate=messagingTemplate;
     }
 
     // Get private chat between two users or create one if doesn't exists
@@ -69,4 +74,29 @@ public class ChatService {
         Chat chat = chatRepository.findById(chatId).orElseThrow(() -> new RuntimeException("Chat not found"));
         return chat.getParticipants().stream().map(Users::getUserID).toList();
     }
+
+    @Transactional(readOnly = true)
+    public void sendingTypingIndicators(TypingIndicatorDTO msg) {
+
+        Chat chat = chatRepository.findById(msg.getChatId())
+                .orElseThrow(() -> new RuntimeException("Chat not found"));
+
+        List<Users> participants = chat.getParticipants();
+
+        for (Users user : participants) {
+
+            // Skip the user who is typing
+            if (user.getUserID().equals(msg.getUserId())) {
+                continue;
+            }
+
+            messagingTemplate.convertAndSend(
+                    "/topic/chat/" + msg.getChatId() + "/typing",
+                    msg
+            );
+
+        }
+    }
+
+
 }
