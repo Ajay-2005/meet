@@ -12,14 +12,22 @@ import org.springframework.web.socket.server.support.HttpSessionHandshakeInterce
 public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // allow all origins to avoid cors issues
-        registry.addEndpoint("/ws").setAllowedOriginPatterns("*") .withSockJS().setInterceptors(new HttpSessionHandshakeInterceptor());// endpoint for websocket connection
+        // Raw WebSocket endpoint
+        registry.addEndpoint("/ws")
+                .setAllowedOriginPatterns("*")
+                .addInterceptors(new HttpSessionHandshakeInterceptor());
+
+        // SockJS fallback endpoint (serves /ws/info, xhr_streaming, etc.)
+        registry.addEndpoint("/ws")
+                .setAllowedOriginPatterns("*")
+                .addInterceptors(new HttpSessionHandshakeInterceptor())
+                .withSockJS();
     }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         // /topic to send message to all users, /queue to send message to specific user
         registry.enableSimpleBroker("/topic","/queue");
         registry.setApplicationDestinationPrefixes("/app");
     }
-
 }

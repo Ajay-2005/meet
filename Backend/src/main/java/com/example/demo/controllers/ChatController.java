@@ -8,7 +8,9 @@ import com.example.demo.models.Messages;
 import com.example.demo.models.Users;
 import com.example.demo.services.ChatService;
 import com.example.demo.services.PresenceService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -17,13 +19,39 @@ import java.util.List;
 public class ChatController {
     private final ChatService chatService;
     private final PresenceService presenceService;
-    public ChatController(ChatService chatService,PresenceService presenceService) {
+    private final SimpMessagingTemplate messagingTemplate;
+
+    public ChatController(ChatService chatService, PresenceService presenceService, SimpMessagingTemplate messagingTemplate) {
         this.chatService = chatService;
-        this.presenceService=presenceService;
+        this.presenceService = presenceService;
+        this.messagingTemplate = messagingTemplate;
     }
-    @PostMapping("/create-chat")
-    public ChatResponseDTO createChat(@RequestBody ChatRequestDTO request, HttpSession session) {
+
+    private String resolveUserId(HttpSession session, HttpServletRequest request, String fallbackId) {
         String userId = (String) session.getAttribute("userId");
+        if (userId != null && !userId.isBlank()) {
+            return userId;
+        }
+        String headerUserId = request.getHeader("X-User-Id");
+        if (headerUserId != null && !headerUserId.isBlank()) {
+            session.setAttribute("userId", headerUserId);
+            return headerUserId;
+        }
+        String paramUserId = request.getParameter("userId");
+        if (paramUserId != null && !paramUserId.isBlank()) {
+            session.setAttribute("userId", paramUserId);
+            return paramUserId;
+        }
+        if (fallbackId != null && !fallbackId.isBlank()) {
+            session.setAttribute("userId", fallbackId);
+            return fallbackId;
+        }
+        return null;
+    }
+
+    @PostMapping("/create-chat")
+    public ChatResponseDTO createChat(@RequestBody ChatRequestDTO request, HttpSession session, HttpServletRequest req) {
+        String userId = resolveUserId(session, req, request.getSenderId());
         if(userId == null) throw new RuntimeException("Unauthorized");
 
         Chat chat;
@@ -50,9 +78,10 @@ public class ChatController {
     public MessageResponseDTO sendMessage(
             @PathVariable String chatId,
             @RequestBody MessageRequestDTO request,
-            HttpSession session
+            HttpSession session,
+            HttpServletRequest req
     ) {
-        String senderId = (String) session.getAttribute("userId");
+        String senderId = resolveUserId(session, req, request.getSenderId());
         if (senderId == null) throw new RuntimeException("Unauthorized");
         Messages saved = chatService.sendMessage(chatId, senderId, request.getContent());
         MessageResponseDTO response = new MessageResponseDTO();
@@ -63,12 +92,15 @@ public class ChatController {
         response.setTimestamp(saved.getTimestamp().toString());
         response.setDelivered(true);
 
+        // Broadcast to WebSocket topic so active listeners receive live updates
+        messagingTemplate.convertAndSend("/topic/chat/" + chatId, response);
+
         return response;
     }
 
     @GetMapping("/{chatId}/messages")
-    public List<MessageResponseDTO> getMessages(@PathVariable String chatId, HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    public List<MessageResponseDTO> getMessages(@PathVariable String chatId, HttpSession session, HttpServletRequest req) {
+        String userId = resolveUserId(session, req, null);
         if (userId == null) throw new RuntimeException("Unauthorized");
 
         List<Messages> messages = chatService.getMessages(chatId);
@@ -83,26 +115,10 @@ public class ChatController {
             return dto;
         }).toList();
     }
-//    @GetMapping("/user/me")
-//    public List<ChatResponseDTO> getUserChats(HttpSession session) {
-//        String userId = (String) session.getAttribute("userId");
-//        if (userId == null) throw new RuntimeException("Unauthorized");
-//        List<String> chats = chatService.getUserChats(userId);
-//        return chats.stream().map(chat -> {
-//            ChatResponseDTO dto = new ChatResponseDTO();
-//            dto.setChatId(chat.getChatId());
-//            dto.setName(chat.getName());
-//            dto.setGroupChat(chat.isGroupChat());
-//            dto.setParticipantIds(chat.getParticipants()
-//                    .stream()
-//                    .map(u -> u.getUserID())
-//                    .toList());
-//            return dto;
-//        }).toList();
-//    }
+
     @GetMapping("/user/me")
-    public List<ChatResponseDTO> getUserChats(HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    public List<ChatResponseDTO> getUserChats(HttpSession session, HttpServletRequest req) {
+        String userId = resolveUserId(session, req, null);
         if (userId == null) throw new RuntimeException("Unauthorized");
 
          List<Chat> chats = chatService.getUserChats(userId);

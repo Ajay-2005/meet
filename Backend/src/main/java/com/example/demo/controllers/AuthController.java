@@ -8,6 +8,9 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -29,8 +32,12 @@ public class AuthController {
         return res;
     }
     @GetMapping("/search-user")
-    public AuthResponseDTO searchUser(@RequestParam String username) {
-        return authService.searchUser(username);
+    public ResponseEntity<AuthResponseDTO> searchUser(@RequestParam String username) {
+        AuthResponseDTO res = authService.searchUser(username);
+        if (res == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok(res);
     }
 
 }

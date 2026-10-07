@@ -42,7 +42,7 @@ public class AuthService {
         System.out.println("username:"+username);
         Users user = userRepository.findByUsername(username.trim());
         if (user == null) {
-            throw new RuntimeException("User not found");
+            return null;
         }
         return new AuthResponseDTO(user.getUserID(), user.getUsername());
     }

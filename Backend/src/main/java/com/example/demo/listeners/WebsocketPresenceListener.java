@@ -16,9 +16,9 @@ public class WebsocketPresenceListener {
     @EventListener
     public void handleWebSocketConnect(SessionConnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String userId = accessor.getNativeHeader("userId").get(0);
+        String userId = accessor.getFirstNativeHeader("userId");
         String sessionId = accessor.getSessionId();
-        if(userId!=null){
+        if (userId != null && !userId.isBlank()) {
             presenceService.userConnected(userId, sessionId);
         }
     }

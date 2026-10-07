@@ -7,4 +7,5 @@ public class ChatRequestDTO {
     private List<String> participantIds;
     private String name;
     private boolean GroupChat;
+    private String senderId;
 }
