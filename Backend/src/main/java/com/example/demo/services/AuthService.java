@@ -5,6 +5,8 @@ import com.example.demo.dto.AuthResponseDTO;
 import com.example.demo.models.Messages;
 import com.example.demo.models.Users;
 import com.example.demo.repositories.UserRepository;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -38,13 +40,22 @@ public class AuthService {
 
         return new AuthResponseDTO(user.getUserID(), user.getUsername());
     }
-    public AuthResponseDTO searchUser(String username) {
-        System.out.println("username:"+username);
-        Users user = userRepository.findByUsername(username.trim());
-        if (user == null) {
-            return null;
+    public List<AuthResponseDTO> searchUsers(String query, String currentUserId) {
+        String q = query == null ? "" : query.trim();
+        if (q.isEmpty()) {
+            return List.of();
         }
-        return new AuthResponseDTO(user.getUserID(), user.getUsername());
+        return userRepository
+                .searchByUsername(escapeLike(q), currentUserId, PageRequest.of(0, 10))
+                .stream()
+                .map(u -> new AuthResponseDTO(u.getUserID(), u.getUsername()))
+                .toList();
+    }
+
+    private static String escapeLike(String s) {
+        return s.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 }
 
