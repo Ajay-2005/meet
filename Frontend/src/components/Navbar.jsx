@@ -32,10 +32,6 @@ export default function Navbar({
         <div className="brand-logo" aria-hidden="true">
           <MessageSquare size={20} strokeWidth={2.4} />
         </div>
-        <div className="brand-title">
-          PulseChat
-          <span className="brand-badge">React</span>
-        </div>
       </div>
 
       {/* Live WebSocket Status Pill */}
