@@ -121,6 +121,41 @@ export default function App() {
     try {
       const data = await api.getUserChats(user.id);
       setChats(data || []);
+
+      if (Array.isArray(data)) {
+        setUserCache((prev) => {
+          let hasChanges = false;
+          const updated = { ...prev };
+          data.forEach((c) => {
+            if (c.participants && Array.isArray(c.participants)) {
+              c.participants.forEach((p) => {
+                const pId = p?.id;
+                const pName = typeof p === 'string' ? p : (p?.name || p?.username);
+                if (pId && pName && !updated[pId]) {
+                  updated[pId] = pName;
+                  hasChanges = true;
+                }
+              });
+            }
+            if (c.participantIds && c.participantNames && Array.isArray(c.participantNames)) {
+              c.participantIds.forEach((id, idx) => {
+                const name = c.participantNames[idx];
+                if (id && name && !updated[id]) {
+                  updated[id] = name;
+                  hasChanges = true;
+                }
+              });
+            }
+          });
+          if (hasChanges) {
+            try {
+              localStorage.setItem(STORAGE_KEYS.USER_CACHE, JSON.stringify(updated));
+            } catch (_) {}
+            return updated;
+          }
+          return prev;
+        });
+      }
     } catch (err) {
       console.warn('Failed to load user chats:', err);
     }
@@ -304,8 +339,35 @@ export default function App() {
   const getChatDisplayName = (chat) => {
     if (!chat) return '';
     const isGroup = Boolean(chat.groupChat || chat.GroupChat);
-    if (isGroup) return chat.name || 'Group Chat';
+    if (isGroup) {
+      if (chat.name) return chat.name;
+      if (chat.participantNames && chat.participantNames.length > 0) {
+        return chat.participantNames.join(', ');
+      }
+      if (chat.participants && chat.participants.length > 0) {
+        const names = chat.participants
+          .map((p) => (typeof p === 'string' ? p : p?.name || p?.username))
+          .filter(Boolean);
+        if (names.length > 0) return names.join(', ');
+      }
+      return 'Group Chat';
+    }
+
     if (chatCustomNames[chat.chatId]) return chatCustomNames[chat.chatId];
+
+    if (chat.participantName) {
+      return chat.participantName;
+    }
+
+    if (chat.participantNames && chat.participantNames.length > 0 && chat.participantNames[0]) {
+      return chat.participantNames[0];
+    }
+
+    if (chat.participants && chat.participants.length > 0) {
+      const p = chat.participants[0];
+      const pName = typeof p === 'string' ? p : (p?.name || p?.username);
+      if (pName) return pName;
+    }
 
     if (chat.participantIds && chat.participantIds.length > 0) {
       const partnerId = chat.participantIds[0];

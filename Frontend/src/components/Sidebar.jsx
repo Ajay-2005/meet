@@ -102,11 +102,35 @@ export default function Sidebar({
   const getChatDisplayName = (chat) => {
     const isGroup = Boolean(chat.groupChat || chat.GroupChat);
     if (isGroup) {
-      return chat.name || 'Group Chat';
+      if (chat.name) return chat.name;
+      if (chat.participantNames && chat.participantNames.length > 0) {
+        return chat.participantNames.join(', ');
+      }
+      if (chat.participants && chat.participants.length > 0) {
+        const names = chat.participants
+          .map((p) => (typeof p === 'string' ? p : p?.name || p?.username))
+          .filter(Boolean);
+        if (names.length > 0) return names.join(', ');
+      }
+      return 'Group Chat';
     }
 
     if (chatCustomNames[chat.chatId]) {
       return chatCustomNames[chat.chatId];
+    }
+
+    if (chat.participantName) {
+      return chat.participantName;
+    }
+
+    if (chat.participantNames && chat.participantNames.length > 0 && chat.participantNames[0]) {
+      return chat.participantNames[0];
+    }
+
+    if (chat.participants && chat.participants.length > 0) {
+      const p = chat.participants[0];
+      const pName = typeof p === 'string' ? p : (p?.name || p?.username);
+      if (pName) return pName;
     }
 
     if (chat.participantIds && chat.participantIds.length > 0) {
