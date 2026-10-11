@@ -58,28 +58,10 @@ public class ChatController {
         response.setChatId(chat.getChatId());
         response.setName(chat.getName());
         response.setGroupChat(chat.isGroupChat());
-
-        List<Users> otherParticipants = chat.getParticipants()
-                .stream()
-                .filter(u -> !u.getUserID().equals(userId))
-                .toList();
-        List<Users> targetList = otherParticipants.isEmpty() ? chat.getParticipants() : otherParticipants;
-
-        response.setParticipantIds(targetList
+        response.setParticipantIds(chat.getParticipants()
                 .stream()
                 .map(Users::getUserID)
                 .toList());
-        response.setParticipantNames(targetList
-                .stream()
-                .map(Users::getUsername)
-                .toList());
-        response.setParticipants(targetList
-                .stream()
-                .map(u -> new ChatResponseDTO.ParticipantInfo(u.getUserID(), u.getUsername(), u.getUsername()))
-                .toList());
-        if (!targetList.isEmpty()) {
-            response.setParticipantName(targetList.get(0).getUsername());
-        }
         return response;
     }
     @PostMapping("/{chatId}/messages")
@@ -136,30 +118,13 @@ public class ChatController {
              dto.setChatId(chat.getChatId());
              dto.setName(chat.getName());
              dto.setGroupChat(chat.isGroupChat());
-
-             List<Users> otherParticipants = chat.getParticipants()
-                     .stream()
-                     .filter(u -> !u.getUserID().equals(userId)) // exclude self
-                     .toList();
-
              dto.setParticipantIds(
-                     otherParticipants.stream()
+                     chat.getParticipants()
+                             .stream()
                              .map(Users::getUserID)
+                             .filter(id -> !id.equals(userId)) // exclude self
                              .toList()
              );
-             dto.setParticipantNames(
-                     otherParticipants.stream()
-                             .map(Users::getUsername)
-                             .toList()
-             );
-             dto.setParticipants(
-                     otherParticipants.stream()
-                             .map(u -> new ChatResponseDTO.ParticipantInfo(u.getUserID(), u.getUsername(), u.getUsername()))
-                             .toList()
-             );
-             if (!otherParticipants.isEmpty()) {
-                 dto.setParticipantName(otherParticipants.get(0).getUsername());
-             }
 
              return dto;
             }).toList();
