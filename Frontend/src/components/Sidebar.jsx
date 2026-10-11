@@ -43,7 +43,9 @@ export default function Sidebar({
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const found = await api.searchUser(query, currentUser?.id);
+        const result = await api.searchUser(query, currentUser?.id);
+        const found = Array.isArray(result) ? result[0] : result;
+
         if (found && found.id) {
           onCacheUser(found.id, found.username);
           setSearchResult(found);

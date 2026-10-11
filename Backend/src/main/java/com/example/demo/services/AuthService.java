@@ -53,9 +53,9 @@ public class AuthService {
     }
 
     private static String escapeLike(String s) {
-        return s.replace("\\", "\\\\")
-                .replace("%", "\\%")
-                .replace("_", "\\_");
-    }
+    return s.replace("!", "!!")
+            .replace("%", "!%")
+            .replace("_", "!_");
+}
 }
 

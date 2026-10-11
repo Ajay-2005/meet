@@ -19,33 +19,48 @@ export default function CreateGroupModal({
 
   if (!isOpen) return null;
 
+  const resetForm = () => {
+    setGroupName('');
+    setMemberInput('');
+    setParticipants([]);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleAddMember = async () => {
     const username = memberInput.trim();
-    if (!username) return;
+    if (!username || isAddingMember) return;
 
     setIsAddingMember(true);
     try {
-      const user = await api.searchUser(username, currentUser?.id);
-      if (!user || !user.id) {
+      const result = await api.searchUser(username);
+      const list = Array.isArray(result) ? result : result ? [result] : [];
+      const found = list.find(
+        (u) => u.username.toLowerCase() === username.toLowerCase()
+      );
+
+      if (!found || !found.id) {
         showToast(`No user found with username "${username}"`, 'error');
         return;
       }
-
-      if (user.id === currentUser?.id) {
+      if (found.id === currentUser?.id) {
         showToast('You are automatically included in the group', 'info');
         setMemberInput('');
         return;
       }
-
-      if (participants.some((p) => p.id === user.id)) {
+      if (participants.some((p) => p.id === found.id)) {
         showToast('User is already added to the group', 'info');
         return;
       }
 
-      onCacheUser(user.id, user.username);
-      setParticipants((prev) => [...prev, { id: user.id, username: user.username }]);
+      onCacheUser(found.id, found.username);
+      setParticipants((prev) => [...prev, { id: found.id, username: found.username }]);
       setMemberInput('');
     } catch (err) {
+      console.error('member search failed', err);
       showToast(`User search failed: ${err.message}`, 'error');
     } finally {
       setIsAddingMember(false);
@@ -57,6 +72,11 @@ export default function CreateGroupModal({
   };
 
   const handleSubmit = async () => {
+    if (!currentUser?.id) {
+      showToast('Please sign in first to create a group', 'warning');
+      return;
+    }
+
     const name = groupName.trim();
     if (!name) {
       showToast('Please enter a group name', 'error');
@@ -81,11 +101,11 @@ export default function CreateGroupModal({
       });
 
       showToast(`Group "${name}" created!`, 'success');
-      setGroupName('');
-      setParticipants([]);
+      resetForm();
       onClose();
       onCreateGroupSuccess(chat);
     } catch (err) {
+      console.error('create group failed', err);
       showToast(`Failed to create group: ${err.message}`, 'error');
     } finally {
       setIsSubmitting(false);

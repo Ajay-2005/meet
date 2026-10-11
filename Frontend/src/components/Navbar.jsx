@@ -34,7 +34,6 @@ export default function Navbar({
         </div>
         <div className="brand-title">
           PulseChat
-          <span className="brand-badge">React</span>
         </div>
       </div>
 
