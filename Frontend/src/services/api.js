@@ -71,7 +71,7 @@ export const api = {
     const payload = {
       name: name || '',
       participantIds,
-      groupChat: Boolean(groupChat),
+      GroupChat: Boolean(groupChat),
       senderId
     };
 
